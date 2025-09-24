@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Copy only composer files first (for caching)
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --ignore-platform-reqs
 
 # Stage 2: Production PHP with Apache
 FROM php:8.2-apache
