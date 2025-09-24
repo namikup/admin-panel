@@ -1,7 +1,16 @@
-# Use official PHP image with Apache
+# Stage 1: Build with Composer
+FROM composer:2 AS build
+
+WORKDIR /app
+
+# Copy only composer files first (to leverage caching)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --with-all-dependencies
+
+# Stage 2: Production PHP with Apache
 FROM php:8.2-apache
 
-# Install system dependencies
+# Install PHP extensions
 RUN apt-get update && apt-get install -y \
     unzip \
     libzip-dev \
@@ -14,23 +23,21 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Copy project files
-COPY . /var/www/html
-
 # Set working directory
 WORKDIR /var/www/html
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Copy Laravel code
+COPY . .
 
-# ✅ FIX: allow Composer to resolve dependency conflicts
-RUN composer install --optimize-autoloader --no-dev --with-all-dependencies
+# Copy vendor from build stage
+COPY --from=build /app/vendor ./vendor
 
-# Set Laravel storage permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Permissions for storage and bootstrap/cache
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
-# Expose port
+# Expose port for Render
 EXPOSE 8080
 
-# Start Apache
+# Apache will serve /public
 CMD ["apache2-foreground"]
