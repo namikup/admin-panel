@@ -22,7 +22,9 @@ WORKDIR /var/www/html
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer install --optimize-autoloader --no-dev
+
+# ✅ FIX: allow Composer to resolve dependency conflicts
+RUN composer install --optimize-autoloader --no-dev --with-all-dependencies
 
 # Set Laravel storage permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
